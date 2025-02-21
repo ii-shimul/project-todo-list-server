@@ -48,21 +48,40 @@ async function run() {
       const result = await taskCollection.insertOne(user);
       res.send(result);
     });
+
+
     app.get("/tasks/:email", async (req, res) => {
-      const email = req.params;
-      const result = await taskCollection.find({ email: email }).toArray();
+      const {email} = req.params;
+      const result = await taskCollection.find({ email: email }).sort({order: 1}).toArray();
       res.send(result);
     });
+
+
     app.delete("/tasks/:id", async (req, res) => {
       const id = req.params;
       const result = await taskCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+
+
     app.put("/tasks/:id", async (req, res) => {
       const id = req.params;
       const result = await taskCollection.updateOne({ _id: new ObjectId(id) });
       res.send(result);
     });
+
+
+    app.put("/tasks-reorder", async (req, res) => {
+      const {tasks} = req.body;
+      const bigOps = tasks.map((task) => ({
+        updateOne: {
+          filter: {_id: new ObjectId(task._id)},
+          update: {$set: {order: task.order, category: task.category}}
+        }
+      }))
+      const result = await taskCollection.bulkWrite(bigOps);
+      res.send(result)
+    })
   } finally {
     // nothing
   }
