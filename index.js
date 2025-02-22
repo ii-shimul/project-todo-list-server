@@ -7,7 +7,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://taskflow---todo-app.web.app"],
   })
 );
 app.use(express.json());
@@ -49,13 +49,14 @@ async function run() {
       res.send(result);
     });
 
-
     app.get("/tasks/:email", async (req, res) => {
-      const {email} = req.params;
-      const result = await taskCollection.find({ email: email }).sort({order: 1}).toArray();
+      const { email } = req.params;
+      const result = await taskCollection
+        .find({ email: email })
+        .sort({ order: 1 })
+        .toArray();
       res.send(result);
     });
-
 
     app.delete("/tasks/:id", async (req, res) => {
       const id = req.params;
@@ -63,25 +64,29 @@ async function run() {
       res.send(result);
     });
 
-
     app.put("/tasks/:id", async (req, res) => {
-      const id = req.params;
-      const result = await taskCollection.updateOne({ _id: new ObjectId(id) });
+      const { id } = req.params;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          ...req.body,
+        },
+      };
+      const result = await taskCollection.updateOne(query, updateDoc);
       res.send(result);
     });
 
-
     app.put("/tasks-reorder", async (req, res) => {
-      const {tasks} = req.body;
+      const { tasks } = req.body;
       const bigOps = tasks.map((task) => ({
         updateOne: {
-          filter: {_id: new ObjectId(task._id)},
-          update: {$set: {order: task.order, category: task.category}}
-        }
-      }))
+          filter: { _id: new ObjectId(task._id) },
+          update: { $set: { order: task.order, category: task.category } },
+        },
+      }));
       const result = await taskCollection.bulkWrite(bigOps);
-      res.send(result)
-    })
+      res.send(result);
+    });
   } finally {
     // nothing
   }
